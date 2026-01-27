@@ -18,7 +18,6 @@
         android:id="@+id/serverUrl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="ws://YOUR_SERVER_IP:8080"
         android:text="wss://idoabsolutelynothing.topolly84.workers.dev:443"
         android:inputType="textUri" />
 

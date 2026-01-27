@@ -20,7 +20,6 @@ import org.webrtc.PeerConnectionFactory
 import org.webrtc.RtpReceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
-import org.webrtc.Logging
 import java.net.InetSocketAddress
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -47,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     private var channel: DataChannel? = null
     private var serverSocket: ServerSocket? = null
     private var pendingSocksPort: Int = -1
-    private var factory: PeerConnectionFactory? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,9 +58,9 @@ class MainActivity : AppCompatActivity() {
         logText = findViewById(R.id.log)
         connectButton = findViewById(R.id.connectButton)
 
-        serverUrlInput.setText("ws://YOUR_SERVER_IP:8080")
+        serverUrlInput.setText("wss://idoabsolutelynothing.topolly84.workers.dev:443")
         stunUrlInput.setText("stun:stun3.l.google.com:5349")
-        socksPortInput.setText("1080")
+        socksPortInput.setText("6075")
 
         connectButton.setOnClickListener {
             if (ws == null) {
@@ -72,7 +70,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        initializeWebRtc()
     }
 
     override fun onDestroy() {
@@ -135,20 +132,8 @@ class MainActivity : AppCompatActivity() {
         connectButton.text = "Connect"
     }
 
-    private fun initializeWebRtc() {
-        PeerConnectionFactory.initialize(
-            PeerConnectionFactory.InitializationOptions.builder(applicationContext)
-                .createInitializationOptions()
-        )
-        Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO)
-        factory = PeerConnectionFactory.builder().createPeerConnectionFactory()
-    }
-
     private fun createPeerConnection(stunUrl: String, webSocket: WebSocket) {
-        val factory = factory ?: run {
-            log("WebRTC factory not initialized")
-            return
-        }
+        val factory = WebRtc.getFactory(applicationContext)
         val iceServers = listOf(PeerConnection.IceServer.builder(stunUrl).createIceServer())
 
         pc = factory.createPeerConnection(iceServers, object : PeerConnection.Observer {

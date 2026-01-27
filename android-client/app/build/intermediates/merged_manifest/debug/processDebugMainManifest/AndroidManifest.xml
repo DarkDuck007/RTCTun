@@ -9,6 +9,7 @@
         android:targetSdkVersion="36" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <permission
         android:name="com.rtctun.client.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -17,6 +18,7 @@
     <uses-permission android:name="com.rtctun.client.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 
     <application
+        android:name="com.rtctun.client.RTCTunApp"
         android:allowBackup="true"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
