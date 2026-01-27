@@ -26,9 +26,23 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocket.Server({ server });
+let nextClientId = 1;
+const clients = new Map();
 
 wss.on("connection", (ws) => {
   let pc;
+  let channel;
+  const clientId = nextClientId++;
+
+  clients.set(ws, { id: clientId, pc: null, channel: null });
+
+  function broadcastFrom(senderId, text) {
+    for (const client of clients.values()) {
+      if (!client.channel || client.id === senderId) continue;
+      if (client.channel.readyState !== "open") continue;
+      client.channel.send(`Client ${senderId}: ${text}`);
+    }
+  }
 
   ws.on("message", async (raw) => {
     let msg;
@@ -43,6 +57,7 @@ wss.on("connection", (ws) => {
       pc = new wrtc.RTCPeerConnection({
         iceServers: msg.iceServers || [],
       });
+      clients.get(ws).pc = pc;
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -56,15 +71,18 @@ wss.on("connection", (ws) => {
       };
 
       pc.ondatachannel = (event) => {
-        const channel = event.channel;
+        channel = event.channel;
+        clients.get(ws).channel = channel;
         channel.onmessage = (ev) => {
-          console.log("Client message:", ev.data);
+          console.log(`Client ${clientId} message:`, ev.data);
+          broadcastFrom(clientId, ev.data);
         };
         channel.onopen = () => {
-          console.log("Data channel open");
+          console.log(`Data channel open for client ${clientId}`);
+          channel.send(`Connected as Client ${clientId}.`);
         };
         channel.onclose = () => {
-          console.log("Data channel closed");
+          console.log(`Data channel closed for client ${clientId}`);
         };
       };
 
@@ -95,10 +113,14 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
+    if (channel && channel.readyState === "open") {
+      channel.close();
+    }
     if (pc) {
       pc.close();
       pc = null;
     }
+    clients.delete(ws);
   });
 });
 
