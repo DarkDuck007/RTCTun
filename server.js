@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const net = require("net");
 const WebSocket = require("ws");
 const wrtc = require("wrtc");
 
@@ -32,6 +33,7 @@ const clients = new Map();
 wss.on("connection", (ws) => {
   let pc;
   let channel;
+  const socksConnections = new Map();
   const clientId = nextClientId++;
 
   clients.set(ws, { id: clientId, pc: null, channel: null });
@@ -42,6 +44,18 @@ wss.on("connection", (ws) => {
       if (client.channel.readyState !== "open") continue;
       client.channel.send(`Client ${senderId}: ${text}`);
     }
+  }
+
+  function sendSocksMessage(payload) {
+    if (!channel || channel.readyState !== "open") return;
+    channel.send(JSON.stringify({ type: "socks", ...payload }));
+  }
+
+  function closeSocksConnection(id) {
+    const socket = socksConnections.get(id);
+    if (!socket) return;
+    socksConnections.delete(id);
+    socket.destroy();
   }
 
   ws.on("message", async (raw) => {
@@ -74,8 +88,69 @@ wss.on("connection", (ws) => {
         channel = event.channel;
         clients.get(ws).channel = channel;
         channel.onmessage = (ev) => {
-          console.log(`Client ${clientId} message:`, ev.data);
-          broadcastFrom(clientId, ev.data);
+          const raw = ev.data.toString();
+          let payload;
+          try {
+            payload = JSON.parse(raw);
+          } catch (err) {
+            console.log(`Client ${clientId} message:`, raw);
+            broadcastFrom(clientId, raw);
+            return;
+          }
+
+          if (payload.type !== "socks") {
+            console.log(`Client ${clientId} message:`, raw);
+            broadcastFrom(clientId, raw);
+            return;
+          }
+
+          if (payload.action === "open") {
+            const { id, host, port } = payload;
+            if (!id || !host || !port) {
+              sendSocksMessage({ action: "error", id, message: "Invalid open request" });
+              return;
+            }
+            if (socksConnections.has(id)) {
+              sendSocksMessage({ action: "error", id, message: "Connection already exists" });
+              return;
+            }
+
+            const socket = net.connect({ host, port: Number(port) }, () => {
+              sendSocksMessage({ action: "opened", id });
+            });
+
+            socksConnections.set(id, socket);
+
+            socket.on("data", (chunk) => {
+              sendSocksMessage({ action: "data", id, data: chunk.toString("base64") });
+            });
+
+            socket.on("error", (err) => {
+              sendSocksMessage({ action: "error", id, message: err.message });
+              closeSocksConnection(id);
+            });
+
+            socket.on("close", () => {
+              sendSocksMessage({ action: "close", id });
+              closeSocksConnection(id);
+            });
+
+            return;
+          }
+
+          if (payload.action === "data") {
+            const { id, data } = payload;
+            const socket = socksConnections.get(id);
+            if (!socket) return;
+            if (!data) return;
+            socket.write(Buffer.from(data, "base64"));
+            return;
+          }
+
+          if (payload.action === "close") {
+            closeSocksConnection(payload.id);
+            return;
+          }
         };
         channel.onopen = () => {
           console.log(`Data channel open for client ${clientId}`);
@@ -113,6 +188,9 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
+    for (const id of socksConnections.keys()) {
+      closeSocksConnection(id);
+    }
     if (channel && channel.readyState === "open") {
       channel.close();
     }
