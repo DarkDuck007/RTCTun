@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.rtctun.client.app-debug-31:/layout_activity_main.xml.flat",
+        "source": "com.rtctun.client.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\Danial\\.gradle\\daemon\\9.0-milestone-1\\com.rtctun.client.app-debug-31:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\Danial\\.gradle\\daemon\\9.0-milestone-1\\com.rtctun.client.app-main-33:\\layout\\activity_main.xml"
+    }
+]

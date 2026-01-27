@@ -1,0 +1,12 @@
+R_DEF: Internal format may change without notice
+local
+id connectButton
+id log
+id serverUrl
+id socksPort
+id status
+id stunUrl
+id title
+layout activity_main
+string app_name
+style Theme.RTCTun

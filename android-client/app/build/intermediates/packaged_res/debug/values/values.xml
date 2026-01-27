@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RTCTun SOCKS Client</string>
+    <style name="Theme.RTCTun" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#1B4DFF</item>
+        <item name="colorPrimaryVariant">#1235B5</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#0D1B33</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+    </style>
+</resources>
